@@ -1,0 +1,31 @@
+{
+  "name": "archer",
+  "version": "1.0.0",
+  "description": "Zero-dependency enterprise architecture mindmap and topology compiler for AI agents",
+  "type": "module",
+  "main": "src/compiler.js",
+  "bin": {
+    "archer": "bin/archer.mjs"
+  },
+  "scripts": {
+    "test": "node tests/test-archer.mjs && node tests/smoke-browser.mjs",
+    "test:unit": "node tests/test-archer.mjs",
+    "test:smoke": "node tests/smoke-browser.mjs",
+    "validate": "node bin/archer.mjs validate",
+    "build": "node bin/archer.mjs build"
+  },
+  "keywords": [
+    "architecture",
+    "mindmap",
+    "topology",
+    "diagram",
+    "agent-skill",
+    "infrastructure",
+    "network-audit"
+  ],
+  "author": "Archer Core Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

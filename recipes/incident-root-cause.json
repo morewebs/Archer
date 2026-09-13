@@ -1,0 +1,147 @@
+{
+  "meta": {
+    "title": "Incident Post-Mortem: Primary DB Connection Exhaustion",
+    "subtitle": "Root cause diagram & cascading 504 Gateway Timeout cascade",
+    "flow": "lr",
+    "theme": "dark",
+    "animated": true,
+    "version": "1.0.0"
+  },
+  "boundaries": [
+    {
+      "id": "b-ingress",
+      "title": "Public Ingress Zone",
+      "category": "DEGRADED TIER",
+      "color": "#fbbf24",
+      "icon": "gateway"
+    },
+    {
+      "id": "b-app",
+      "title": "Application Tier (Blocked)",
+      "category": "BLOCKED PODS",
+      "color": "#fb7185",
+      "icon": "server"
+    },
+    {
+      "id": "b-db",
+      "title": "Database Cluster (Failure Point)",
+      "category": "CRITICAL INCIDENT",
+      "color": "#e11d48",
+      "icon": "database"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "public-traffic",
+      "title": "Internet Users (P99 Spike)",
+      "subtitle": "Global Ingress",
+      "category": "CLIENT TRAFFIC",
+      "icon": "client",
+      "color": "#38bdf8",
+      "status": "warn",
+      "statusText": "429/504 errors",
+      "metrics": "24.5k Error RPS",
+      "submetrics": "Drop rate 84%",
+      "boundary": "b-ingress",
+      "stage": 0,
+      "lane": 0,
+      "alert": "💥 Incident: 84% of user requests failing with HTTP 504",
+      "details": [
+        { "k": "Impacted Region", "v": "Global Traffic" },
+        { "k": "Duration", "v": "14:22 - 14:58 UTC (36m)" }
+      ],
+      "hasInput": false,
+      "hasOutput": true
+    },
+    {
+      "id": "ingress-gw",
+      "title": "Cloudflare & NGINX Edge",
+      "subtitle": "edge-lb-01.prod:443",
+      "category": "EDGE INGRESS",
+      "icon": "gateway",
+      "color": "#fbbf24",
+      "status": "warn",
+      "statusText": "timeout",
+      "metrics": "504 Gateway Timeout",
+      "submetrics": "Queue full (60s cap)",
+      "boundary": "b-ingress",
+      "stage": 1,
+      "lane": 0,
+      "alert": "⚠️ Cascaded timeout: Upstream backend workers unresponsive",
+      "details": [
+        { "k": "Worker Keep-Alive", "v": "Maxed (65,535 conns)" },
+        { "k": "Buffer Pool", "v": "100% Saturation" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "app-workers",
+      "title": "Checkout API Pods",
+      "subtitle": "k8s-pod-checkout-* (64 Pods)",
+      "category": "APP RUNTIME",
+      "icon": "server",
+      "color": "#fb7185",
+      "status": "err",
+      "statusText": "thread lock",
+      "metrics": "Goroutines: 120,000",
+      "submetrics": "All 64 Pods Hung",
+      "boundary": "b-app",
+      "stage": 2,
+      "lane": 0,
+      "alert": "💥 DEADLOCK: HikariCP / pgx pool blocked on getResource()",
+      "details": [
+        { "k": "Thread Dump", "v": "Waiting on DB socket read" },
+        { "k": "Healthcheck", "v": "Liveness Probe Failed" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "primary-db",
+      "title": "PostgreSQL 15 Primary",
+      "subtitle": "pg-master.internal:5432",
+      "category": "ROOT CAUSE",
+      "icon": "database",
+      "color": "#e11d48",
+      "status": "err",
+      "statusText": "exhausted",
+      "metrics": "max_connections: 500",
+      "submetrics": "Active: 500 (100% Max)",
+      "boundary": "b-db",
+      "stage": 3,
+      "lane": 0,
+      "alert": "💥 ROOT CAUSE: Unindexed query lock cascade held exclusive table lock",
+      "details": [
+        { "k": "Offending Query", "v": "UPDATE inventory SET count = ..." },
+        { "k": "Lock Type", "v": "RowExclusiveLock held 1240s" },
+        { "k": "Disk I/O Latency", "v": "Spiked to 3,400ms" }
+      ],
+      "hasInput": true,
+      "hasOutput": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "public-traffic",
+      "to": "ingress-gw",
+      "label": "Spike 35,000 RPS",
+      "color": "#fbbf24",
+      "status": "warn"
+    },
+    {
+      "from": "ingress-gw",
+      "to": "app-workers",
+      "label": "Proxy Forward (Hangs 60s)",
+      "color": "#fb7185",
+      "status": "err"
+    },
+    {
+      "from": "app-workers",
+      "to": "primary-db",
+      "label": "💥 FATAL: Pool Exhaustion (500/500)",
+      "color": "#e11d48",
+      "status": "err"
+    }
+  ]
+}

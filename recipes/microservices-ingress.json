@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "title": "Microservices API Ingress & Event Streaming Pipeline",
+    "subtitle": "Async Kafka event-driven order processing with feedback notification loop",
+    "flow": "lr",
+    "theme": "dark",
+    "animated": true,
+    "version": "1.0.0"
+  },
+  "boundaries": [
+    {
+      "id": "b-clients",
+      "title": "Client Edge Layer",
+      "category": "EXTERNAL INGRESS",
+      "color": "#38bdf8",
+      "icon": "client"
+    },
+    {
+      "id": "b-mesh",
+      "title": "Service Mesh Cluster",
+      "category": "INTERNAL FABRIC",
+      "color": "#8b5cf6",
+      "icon": "server"
+    },
+    {
+      "id": "b-events",
+      "title": "Event Streaming & Workers",
+      "category": "ASYNC PIPELINE",
+      "color": "#f59e0b",
+      "icon": "queue"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "web-mobile",
+      "title": "Web & Mobile Clients",
+      "subtitle": "HTTPS Clients / Apps",
+      "category": "INGRESS TRAFFIC",
+      "icon": "client",
+      "color": "#38bdf8",
+      "status": "ok",
+      "statusText": "active",
+      "metrics": "8,200 Conn",
+      "submetrics": "WebSockets Active",
+      "boundary": "b-clients",
+      "stage": 0,
+      "lane": 0,
+      "details": [
+        { "k": "App Versions", "v": "v4.12.0 (iOS/Android)" },
+        { "k": "Keep-Alive", "v": "60s Ping Interval" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "api-gw",
+      "title": "Envoy API Gateway",
+      "subtitle": "api.domain.io:443",
+      "category": "API GATEWAY",
+      "icon": "gateway",
+      "color": "#8b5cf6",
+      "status": "ok",
+      "statusText": "healthy",
+      "metrics": "Rate Limiting: On",
+      "submetrics": "gRPC Transcoding",
+      "boundary": "b-mesh",
+      "stage": 1,
+      "lane": 0,
+      "details": [
+        { "k": "Circuit Breaker", "v": "503 Threshold 5%" },
+        { "k": "Telemetry", "v": "OpenTelemetry Exporter" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "order-svc",
+      "title": "Order Orchestrator",
+      "subtitle": "order-svc.internal:50051",
+      "category": "DOMAIN SERVICE",
+      "icon": "server",
+      "color": "#a855f7",
+      "status": "ok",
+      "statusText": "running",
+      "metrics": "P99 18ms",
+      "submetrics": "Saga Pattern Orchestrator",
+      "boundary": "b-mesh",
+      "stage": 2,
+      "lane": 0,
+      "details": [
+        { "k": "Runtime", "v": "Go 1.22 / Gin" },
+        { "k": "Protocol", "v": "gRPC over HTTP/2" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "inventory-svc",
+      "title": "Inventory Lock Service",
+      "subtitle": "inventory-svc.internal:50051",
+      "category": "DOMAIN SERVICE",
+      "icon": "database",
+      "color": "#c084fc",
+      "status": "ok",
+      "statusText": "in-sync",
+      "metrics": "Optimistic Lock",
+      "submetrics": "Redis Distributed Mutex",
+      "boundary": "b-mesh",
+      "stage": 2,
+      "lane": 1,
+      "details": [
+        { "k": "Hold Timeout", "v": "15m Reservation" },
+        { "k": "Idempotency", "v": "UUID V4 Verified" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "kafka-bus",
+      "title": "Apache Kafka Cluster",
+      "subtitle": "kafka-broker-0:9092",
+      "category": "EVENT BUS",
+      "icon": "queue",
+      "color": "#f59e0b",
+      "status": "ok",
+      "statusText": "ack: all",
+      "metrics": "Topic: orders.v1",
+      "submetrics": "3 Partitions / Replication 3",
+      "boundary": "b-events",
+      "stage": 3,
+      "lane": 0,
+      "details": [
+        { "k": "Compression", "v": "zstd level 3" },
+        { "k": "Retention", "v": "7 Days Log Segment" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "payment-worker",
+      "title": "Payment Consumer Worker",
+      "subtitle": "worker-pool-8:8080",
+      "category": "ASYNC CONSUMER",
+      "icon": "cpu",
+      "color": "#10b981",
+      "status": "ok",
+      "statusText": "consuming",
+      "metrics": "Stripe & PayPal",
+      "submetrics": "Zero Lag / 350 evt/s",
+      "boundary": "b-events",
+      "stage": 4,
+      "lane": 0,
+      "details": [
+        { "k": "Consumer Group", "v": "cg-payment-processor" },
+        { "k": "Dead Letter Queue", "v": "orders.dlq.v1" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    }
+  ],
+  "edges": [
+    {
+      "from": "web-mobile",
+      "to": "api-gw",
+      "label": "TLS 1.3 / REST & WS",
+      "color": "#38bdf8",
+      "status": "ok"
+    },
+    {
+      "from": "api-gw",
+      "to": "order-svc",
+      "label": "gRPC /orders/checkout",
+      "color": "#8b5cf6",
+      "status": "ok"
+    },
+    {
+      "from": "order-svc",
+      "to": "inventory-svc",
+      "label": "Lateral Stock Check",
+      "color": "#c084fc",
+      "status": "ok"
+    },
+    {
+      "from": "order-svc",
+      "to": "kafka-bus",
+      "label": "Produce OrderCreatedEvent",
+      "color": "#f59e0b",
+      "status": "ok"
+    },
+    {
+      "from": "kafka-bus",
+      "to": "payment-worker",
+      "label": "Consumer Fetch (Batch 50)",
+      "color": "#10b981",
+      "status": "ok"
+    },
+    {
+      "from": "payment-worker",
+      "to": "web-mobile",
+      "label": "WebSocket Async Order Confirmation",
+      "color": "#34d399",
+      "status": "ok",
+      "dashed": true
+    }
+  ]
+}

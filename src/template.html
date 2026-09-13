@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- ARCHER_META_STAMP -->
+  <title><!-- ARCHER_TITLE --></title>
+  
+  <!-- Typography with offline-safe system font fallbacks -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-canvas: #0b0c0e;
+      --bg-card: #14151b;
+      --bg-card-sub: #101117;
+      --bg-card-foot: #0e0f14;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.22);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #555d70;
+      --port-in: #38bdf8;
+      --port-out: #34d399;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      overflow: hidden;
+      user-select: none;
+      touch-action: none;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .font-mono {
+      font-family: var(--font-mono);
+    }
+
+    /* Canvas Viewport */
+    #canvas-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      cursor: grab;
+    }
+    #canvas-container:active {
+      cursor: grabbing;
+    }
+
+    #world {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      pointer-events: auto;
+    }
+
+    /* Boundaries Layer */
+    #boundaries-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .boundary-card {
+      position: absolute;
+      border-radius: 16px;
+      background: rgba(16, 19, 26, 0.55);
+      backdrop-filter: blur(4px);
+      border: 1.5px dashed rgba(59, 130, 246, 0.4);
+      pointer-events: none;
+      transition: opacity 0.25s ease, border-color 0.25s ease;
+    }
+
+    .boundary-header {
+      position: absolute;
+      top: -14px;
+      left: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 12px;
+      background: #181c26;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .boundary-dimmed {
+      opacity: 0.15;
+    }
+
+    /* SVG Lines Layer */
+    #svg-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+      z-index: 2;
+    }
+
+    .edge-group {
+      transition: opacity 0.25s ease;
+    }
+
+    .edge-cable {
+      transition: stroke-width 0.2s ease, filter 0.2s ease;
+    }
+
+    /* Flow pulse animation */
+    @keyframes cablePulse {
+      from { stroke-dashoffset: 24; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .cable-pulsing {
+      stroke-dasharray: 6 6;
+      animation: cablePulse 1s linear infinite;
+    }
+
+    .no-pulse .cable-pulsing {
+      animation: none !important;
+      stroke-dasharray: none !important;
+    }
+
+    .edge-dimmed {
+      opacity: 0.08 !important;
+    }
+
+    .edge-traced .edge-cable {
+      stroke-width: 3.5px !important;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.7));
+    }
+
+    /* Node Cards Layer */
+    #nodes-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .node-card {
+      position: absolute;
+      width: 310px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.25s ease, filter 0.25s ease;
+    }
+
+    .node-card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .node-card.selected {
+      border-color: #0284c7 !important;
+      box-shadow: 0 0 0 1px #0284c7, 0 12px 28px rgba(0, 0, 0, 0.85) !important;
+    }
+
+    .node-card.traced {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px #38bdf8, 0 12px 28px rgba(0, 0, 0, 0.85);
+    }
+
+    .node-card.dimmed {
+      opacity: 0.15 !important;
+      filter: grayscale(0.85) !important;
+      pointer-events: none;
+    }
+
+    /* Card Internal Sections */
+    .card-header {
+      padding: 14px 14px 10px 14px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .card-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .card-titles {
+      overflow: hidden;
+    }
+
+    .card-category {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 2px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-subtitle {
+      padding: 0 14px 8px 14px;
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-alert {
+      margin: 0 12px 10px 12px;
+      padding: 7px 9px;
+      border-radius: 6px;
+      font-size: 10px;
+      line-height: 1.35;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .card-details {
+      padding: 8px 14px;
+      background: var(--bg-card-sub);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 10px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+    }
+    .detail-key { color: var(--text-dim); }
+    .detail-val { color: var(--text-main); font-weight: 500; }
+
+    .card-footer {
+      padding: 7px 14px;
+      background: var(--bg-card-foot);
+      border-top: 1px solid var(--border-subtle);
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .card-footer .metric { color: #fff; font-weight: 600; }
+    .card-footer .submetric { font-size: 9px; color: var(--text-dim); }
+
+    /* Ports */
+    .port {
+      position: absolute;
+      top: 35px;
+      width: 14px;
+      height: 14px;
+      background: #14151b;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .port-in { left: -7px; border: 2px solid var(--port-in); }
+    .port-in::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--port-in); }
+    .port-out { right: -7px; border: 2px solid var(--port-out); }
+    .port-out::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--port-out); }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      font-weight: 500;
+      flex-shrink: 0;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .status-badge::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+    }
+    .status-ok { background: rgba(6, 78, 59, 0.6); color: #34d399; border: 1px solid rgba(5, 150, 105, 0.4); }
+    .status-ok::before { background: #34d399; }
+    .status-err { background: rgba(76, 5, 25, 0.7); color: #fb7185; border: 1px solid rgba(225, 29, 72, 0.5); }
+    .status-err::before { background: #fb7185; }
+    .status-warn { background: rgba(69, 26, 3, 0.7); color: #fbbf24; border: 1px solid rgba(217, 119, 6, 0.5); }
+    .status-warn::before { background: #fbbf24; }
+    .status-unknown { background: rgba(55, 65, 81, 0.6); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.4); }
+    .status-unknown::before { background: #9ca3af; }
+
+    /* Floating UI Controls */
+    .floating-ui {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(19, 20, 26, 0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 4px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 100;
+      font-size: 11px;
+      color: var(--text-muted);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+    .floating-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+    }
+    .floating-btn:hover { background: #1f212a; color: #fff; }
+
+    /* Header Ribbon */
+    .header-ribbon {
+      position: absolute;
+      top: 18px;
+      left: 24px;
+      z-index: 100;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .ribbon-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ribbon-badge {
+      font-size: 10px;
+      font-weight: 600;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+    }
+    .ribbon-subtitle {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Title Ribbon -->
+  <div class="header-ribbon">
+    <div class="ribbon-title font-mono">
+      <span><!-- ARCHER_TITLE --></span>
+      <span class="ribbon-badge"><!-- ARCHER_FLOW --></span>
+    </div>
+    <!-- ARCHER_SUBTITLE_HTML -->
+  </div>
+
+  <div id="canvas-container">
+    <div id="world" style="width: <!-- ARCHER_WORLD_WIDTH -->px; height: <!-- ARCHER_WORLD_HEIGHT -->px;">
+      <!-- Boundaries Layer -->
+      <div id="boundaries-layer">
+        <!-- ARCHER_BOUNDARIES_HTML -->
+      </div>
+      <!-- SVG Cable Lines Layer -->
+      <svg id="svg-layer">
+        <defs>
+          <marker id="arrow-forward" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#60a5fa" />
+          </marker>
+        </defs>
+        <!-- ARCHER_EDGES_HTML -->
+      </svg>
+      <!-- HTML Node Cards Layer -->
+      <div id="nodes-layer">
+        <!-- ARCHER_NODES_HTML -->
+      </div>
+    </div>
+
+    <!-- Floating Viewport & Action Controls -->
+    <div class="floating-ui font-mono">
+      <button class="floating-btn" id="btn-zoom-in" title="Zoom In">+</button>
+      <button class="floating-btn" id="btn-zoom-out" title="Zoom Out">−</button>
+      <span style="color: var(--text-dim)">•</span>
+      <button class="floating-btn" id="btn-fit" title="Fit to View">Fit (<span id="zoom-label">85%</span>)</button>
+      <span style="color: var(--text-dim)">•</span>
+      <button class="floating-btn" id="btn-pulse" title="Toggle Animated Packet Pulses">⚡ Pulse: ON</button>
+      <span style="color: var(--text-dim)">•</span>
+      <button class="floating-btn" id="btn-export-svg" title="Export Pure-SVG Vector">SVG</button>
+      <button class="floating-btn" id="btn-export-png" title="Export PNG Image">PNG</button>
+    </div>
+  </div>
+
+  <!-- Inlined Archer Data & Graph Logic -->
+  <script>
+    /* Inlined Archer Dataset */
+    window.ARCHER_DATA = <!-- ARCHER_DATA_JSON -->;
+
+    /* Inlined Pure Graph Engine */
+    window.ArcherGraph = (function() {
+      <!-- ARCHER_GRAPH_JS -->
+      return { buildAdjacency, detectCycles, computeStagesAndLanes, classifyEdges, tracePaths };
+    })();
+  </script>
+
+  <!-- Inlined Archer Interactive Runtime -->
+  <script>
+    <!-- ARCHER_RUNTIME_JS -->
+  </script>
+</body>
+</html>

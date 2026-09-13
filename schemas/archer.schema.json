@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Archer/archer/main/schemas/archer.schema.json",
+  "title": "Archer Architecture Mindmap Specification",
+  "type": "object",
+  "required": ["meta", "nodes", "edges"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the architecture topology"
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Optional secondary descriptive title"
+        },
+        "flow": {
+          "type": "string",
+          "enum": ["lr", "tb"],
+          "default": "lr",
+          "description": "Direction of flow: lr (left-to-right) or tb (top-to-bottom)"
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dark"],
+          "default": "dark",
+          "description": "Visual theme (dark by default)"
+        },
+        "animated": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether cable flow pulses are active by default"
+        },
+        "version": {
+          "type": "string",
+          "description": "Schema or specification version"
+        }
+      },
+      "additionalProperties": false
+    },
+    "boundaries": {
+      "type": "array",
+      "description": "Container boundaries (e.g. VPC, Region, Cluster) enclosing member nodes",
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "Unique identifier for the boundary"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display name of the boundary (e.g. AWS us-east-1, DMZ)"
+          },
+          "category": {
+            "type": "string",
+            "description": "Boundary type/category (e.g. VPC, KUBERNETES CLUSTER, ON-PREM)"
+          },
+          "color": {
+            "type": "string",
+            "description": "Boundary accent hex color (e.g. #3b82f6)"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Icon glyph, emoji, or icon name (e.g. cloud, shield, server)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "nodes": {
+      "type": "array",
+      "description": "Components and services in the topology",
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "description": "Unique identifier for the node"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display name of the node"
+          },
+          "subtitle": {
+            "type": "string",
+            "description": "Secondary mono line (e.g. IP address, DNS name, endpoint)"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category badge text (e.g. INGRESS GATEWAY, DATABASE, RELAY)"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Icon glyph, emoji, or built-in icon identifier"
+          },
+          "color": {
+            "type": "string",
+            "description": "Accent hex color for the card icon and highlight"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ok", "warn", "err", "unknown"],
+            "default": "ok",
+            "description": "Operational health or audit status"
+          },
+          "statusText": {
+            "type": "string",
+            "description": "Short status label (e.g. online, overhead, lossy, degraded)"
+          },
+          "metrics": {
+            "type": "string",
+            "description": "Primary telemetry metric displayed in card footer"
+          },
+          "submetrics": {
+            "type": "string",
+            "description": "Secondary telemetry metric displayed in card footer"
+          },
+          "alert": {
+            "type": ["string", "null"],
+            "description": "Warning or bottleneck alert banner displayed across the card"
+          },
+          "details": {
+            "type": "array",
+            "description": "Key-value configuration and telemetry rows",
+            "items": {
+              "type": "object",
+              "required": ["k", "v"],
+              "properties": {
+                "k": { "type": "string" },
+                "v": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "default": []
+          },
+          "boundary": {
+            "type": "string",
+            "description": "ID of boundary container enclosing this node (canonical source of truth)"
+          },
+          "stage": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Layout stage along flow axis (0, 1, 2...)"
+          },
+          "lane": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Layout lane cross-axis (0, 1, 2...)"
+          },
+          "x": {
+            "type": "number",
+            "description": "Explicit X pixel coordinate (overrides auto-layout if supplied)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Explicit Y pixel coordinate (overrides auto-layout if supplied)"
+          },
+          "hasInput": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether an input port is rendered"
+          },
+          "hasOutput": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether an output port is rendered"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "description": "Connections, cables, and network links between nodes",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Source node ID"
+          },
+          "to": {
+            "type": "string",
+            "description": "Target node ID"
+          },
+          "label": {
+            "type": "string",
+            "description": "Label text displayed on edge center pill"
+          },
+          "color": {
+            "type": "string",
+            "description": "Hex color of the cable"
+          },
+          "dashed": {
+            "type": "boolean",
+            "default": false,
+            "description": "Render cable with dashed stroke pattern"
+          },
+          "animated": {
+            "type": "boolean",
+            "description": "Override pulse animation for this specific edge"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ok", "warn", "err", "unknown"],
+            "description": "Status color mapping for edge"
+          },
+          "metrics": {
+            "type": "string",
+            "description": "Telemetry metric (e.g. latency, bandwidth, MTU)"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

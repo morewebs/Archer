@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "title": "Production Cloud Infrastructure & VPC Topology",
+    "subtitle": "High-availability AWS us-east-1 multi-tier microservices",
+    "flow": "lr",
+    "theme": "dark",
+    "animated": true,
+    "version": "1.0.0"
+  },
+  "boundaries": [
+    {
+      "id": "b-edge",
+      "title": "Global Edge / CDN",
+      "category": "ANYCAST EDGE",
+      "color": "#f59e0b",
+      "icon": "globe"
+    },
+    {
+      "id": "b-vpc",
+      "title": "AWS VPC (10.0.0.0/16)",
+      "category": "CLOUD VPC",
+      "color": "#3b82f6",
+      "icon": "cloud"
+    },
+    {
+      "id": "b-private",
+      "title": "Isolated Data Tier",
+      "category": "PRIVATE SUBNET",
+      "color": "#10b981",
+      "icon": "shield"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "cdn-waf",
+      "title": "Cloudflare WAF & CDN",
+      "subtitle": "104.16.24.1 (Anycast)",
+      "category": "EDGE FIREWALL",
+      "icon": "shield",
+      "color": "#f59e0b",
+      "status": "ok",
+      "statusText": "mitigating",
+      "metrics": "45.2k req/s",
+      "submetrics": "0.4ms Edge TTL",
+      "boundary": "b-edge",
+      "stage": 0,
+      "lane": 0,
+      "details": [
+        { "k": "DDoS Shield", "v": "Active (L7)" },
+        { "k": "TLS Termination", "v": "TLS 1.3 / ChaCha20" }
+      ],
+      "hasInput": false,
+      "hasOutput": true
+    },
+    {
+      "id": "alb-ingress",
+      "title": "AWS Dual-Stack ALB",
+      "subtitle": "alb.internal.domain.com",
+      "category": "INGRESS BALANCER",
+      "icon": "gateway",
+      "color": "#3b82f6",
+      "status": "ok",
+      "statusText": "healthy",
+      "metrics": "Target Groups: 4",
+      "submetrics": "99.99% Availability",
+      "boundary": "b-vpc",
+      "stage": 1,
+      "lane": 0,
+      "details": [
+        { "k": "Algorithm", "v": "Least Outstanding Req" },
+        { "k": "WAF Association", "v": "AWS WAFv2 Enabled" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "eks-api",
+      "title": "EKS Core API Pods",
+      "subtitle": "10.0.4.12:8080 (32 Pods)",
+      "category": "MICROSERVICES",
+      "icon": "server",
+      "color": "#6366f1",
+      "status": "ok",
+      "statusText": "running",
+      "metrics": "18.4k RPS",
+      "submetrics": "14ms Avg P95",
+      "boundary": "b-vpc",
+      "stage": 2,
+      "lane": 0,
+      "details": [
+        { "k": "HPA Autoscaling", "v": "Target 70% CPU" },
+        { "k": "Mesh Proxy", "v": "Istio Envoy Sidecar" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "auth-service",
+      "title": "Keycloak Auth Service",
+      "subtitle": "10.0.4.88:8443 (8 Pods)",
+      "category": "IDENTITY & SSO",
+      "icon": "lock",
+      "color": "#ec4899",
+      "status": "ok",
+      "statusText": "healthy",
+      "metrics": "JWT Validation",
+      "submetrics": "2.1ms Latency",
+      "boundary": "b-vpc",
+      "stage": 2,
+      "lane": 1,
+      "details": [
+        { "k": "Issuer", "v": "oidc.prod.corp" },
+        { "k": "JWKS Caching", "v": "TTL 300s" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "db-aurora",
+      "title": "Aurora PostgreSQL 16",
+      "subtitle": "aurora-cluster.us-east-1",
+      "category": "MANAGED DB",
+      "icon": "database",
+      "color": "#10b981",
+      "status": "ok",
+      "statusText": "synced",
+      "metrics": "Multi-AZ Primary",
+      "submetrics": "3 Read Replicas",
+      "boundary": "b-private",
+      "stage": 3,
+      "lane": 0,
+      "details": [
+        { "k": "Storage Engine", "v": "NVMe Serverless v2" },
+        { "k": "IOPS Bandwidth", "v": "128,000 Provisioned" }
+      ],
+      "hasInput": true,
+      "hasOutput": false
+    },
+    {
+      "id": "redis-cache",
+      "title": "ElastiCache Redis Cluster",
+      "subtitle": "redis-nodes.us-east-1:6379",
+      "category": "IN-MEMORY CACHE",
+      "icon": "cpu",
+      "color": "#14b8a6",
+      "status": "ok",
+      "statusText": "hit rate 96%",
+      "metrics": "6 Nodes Sharded",
+      "submetrics": "< 0.8ms Latency",
+      "boundary": "b-private",
+      "stage": 3,
+      "lane": 1,
+      "details": [
+        { "k": "Eviction Policy", "v": "allkeys-lru" },
+        { "k": "In-Transit TLS", "v": "Enabled (Auth Token)" }
+      ],
+      "hasInput": true,
+      "hasOutput": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "cdn-waf",
+      "to": "alb-ingress",
+      "label": "mTLS Tunnel (Origin Shield)",
+      "color": "#f59e0b",
+      "status": "ok"
+    },
+    {
+      "from": "alb-ingress",
+      "to": "eks-api",
+      "label": "HTTP/2 Routing (:8080)",
+      "color": "#3b82f6",
+      "status": "ok"
+    },
+    {
+      "from": "alb-ingress",
+      "to": "auth-service",
+      "label": "/oauth2 & /auth (:8443)",
+      "color": "#ec4899",
+      "status": "ok"
+    },
+    {
+      "from": "eks-api",
+      "to": "db-aurora",
+      "label": "Pooled pgx (Max 120 Conns)",
+      "color": "#10b981",
+      "status": "ok"
+    },
+    {
+      "from": "eks-api",
+      "to": "redis-cache",
+      "label": "Session & Token Cache",
+      "color": "#14b8a6",
+      "status": "ok"
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "title": "Cross-Border Network & Proxy Chain Audit",
+    "subtitle": "Latency bottleneck analysis & MTU fragmentation trace",
+    "flow": "lr",
+    "theme": "dark",
+    "animated": true,
+    "version": "1.0.0"
+  },
+  "boundaries": [],
+  "nodes": [
+    {
+      "id": "client-1",
+      "title": "Client Device",
+      "subtitle": "192.0.2.15:443",
+      "category": "INGRESS CLIENT",
+      "icon": "💻",
+      "color": "#38bdf8",
+      "status": "ok",
+      "statusText": "online",
+      "metrics": "1500 MTU",
+      "submetrics": "42ms RTT",
+      "alert": null,
+      "stage": 0,
+      "lane": 0,
+      "details": [
+        { "k": "Protocol", "v": "VLESS over WS" },
+        { "k": "TLS SNI", "v": "proxy.example.com" }
+      ],
+      "hasInput": false,
+      "hasOutput": true
+    },
+    {
+      "id": "edge-1",
+      "title": "Host: edge-gw-01",
+      "subtitle": "198.51.100.24",
+      "category": "EDGE GATEWAY",
+      "icon": "🛡️",
+      "color": "#60a5fa",
+      "status": "warn",
+      "statusText": "overhead",
+      "metrics": "HAProxy ➔ Docker ➔ Xray",
+      "submetrics": "Port :2005",
+      "alert": "💥 INEFFICIENCY: Triple userspace proxying on same host",
+      "stage": 1,
+      "lane": 0,
+      "details": [
+        { "k": "Frontend", "v": "HAProxy (:443)" },
+        { "k": "Container", "v": "Docker bridge veth" },
+        { "k": "Core Inbound", "v": "Xray 9 (inbound8)" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "relay-1",
+      "title": "Host: relay-node-02",
+      "subtitle": "198.51.100.88",
+      "category": "TUNNEL RELAY",
+      "icon": "⚡",
+      "color": "#818cf8",
+      "status": "err",
+      "statusText": "lossy",
+      "metrics": "awgom1 (MTU 1300)",
+      "submetrics": "UDP Userspace",
+      "alert": "💥 INEFFICIENCY: amneziawg-go CPU context switching",
+      "stage": 2,
+      "lane": 0,
+      "details": [
+        { "k": "LAN Dial", "v": "10.0.1.11:6224 (<0.6ms)" },
+        { "k": "Driver", "v": "userspace amneziawg-go" },
+        { "k": "MSS Clamping", "v": "Disabled (Packet splits)" }
+      ],
+      "hasInput": true,
+      "hasOutput": true
+    },
+    {
+      "id": "exit-1",
+      "title": "Host: egress-pop-03",
+      "subtitle": "203.0.113.50",
+      "category": "EGRESS POP",
+      "icon": "🌐",
+      "color": "#34d399",
+      "status": "ok",
+      "statusText": "egress ok",
+      "metrics": "~206 KB/s",
+      "submetrics": "1.65–3.6 Mbps Capped",
+      "alert": null,
+      "stage": 3,
+      "lane": 0,
+      "details": [
+        { "k": "Host Provider", "v": "Cloud Transit Hub (AS64512)" },
+        { "k": "NAT Mode", "v": "nftables MASQUERADE" },
+        { "k": "Measured RTT", "v": "~38ms Backbone" }
+      ],
+      "hasInput": true,
+      "hasOutput": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "client-1",
+      "to": "edge-1",
+      "label": "💥 MTU 1500 ➔ 1300 Split",
+      "color": "#f59e0b",
+      "status": "warn",
+      "dashed": false
+    },
+    {
+      "from": "edge-1",
+      "to": "relay-1",
+      "label": "LAN 10.0.1.11 (<0.6ms)",
+      "color": "#60a5fa",
+      "status": "ok",
+      "dashed": false
+    },
+    {
+      "from": "relay-1",
+      "to": "exit-1",
+      "label": "AmneziaWG (~38ms RTT)",
+      "color": "#34d399",
+      "status": "ok",
+      "dashed": false
+    }
+  ]
+}
