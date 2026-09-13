@@ -160,24 +160,24 @@ test('computeLayout produces exact golden coordinates and boundary boxes', () =>
   assert.equal(n1.width, CARD_WIDTH);
   assert.equal(n1.height, BASE_HEIGHT);
 
-  // Stage 1 X is 80 + 310 + 240 = 630
-  assert.equal(n2.x, 630);
+  // Stage 1 X is 80 + 260 + 200 = 540
+  assert.equal(n2.x, 540);
   assert.equal(n2.y, 120);
 
   // Boundary 1 enclosing box
   const b1 = layout.boundaries.find(b => b.id === 'b1');
   assert.notEqual(b1.bounds, null);
-  assert.equal(b1.bounds.x, 80 - 40);
-  assert.equal(b1.bounds.y, 120 - 52);
-  assert.equal(b1.bounds.width, (630 + 310 - 80) + (2 * 40));
-  assert.equal(b1.bounds.height, BASE_HEIGHT + 52 + 36);
+  assert.equal(b1.bounds.x, 80 - 36);
+  assert.equal(b1.bounds.y, 120 - 48);
+  assert.equal(b1.bounds.width, (540 + 260 - 80) + (2 * 36));
+  assert.equal(b1.bounds.height, BASE_HEIGHT + 48 + 32);
 
-  // Edge path coordinates
+  // Edge path coordinates - strictly centered at vertical middle of nodes
   const edge = layout.edges[0];
   assert.equal(edge.sx, 80 + CARD_WIDTH);
-  assert.equal(edge.sy, 120 + 42);
-  assert.equal(edge.tx, 630);
-  assert.equal(edge.ty, 120 + 42);
+  assert.equal(edge.sy, 120 + (BASE_HEIGHT / 2));
+  assert.equal(edge.tx, 540);
+  assert.equal(edge.ty, 120 + (BASE_HEIGHT / 2));
 });
 
 // -------------------------------------------------------------

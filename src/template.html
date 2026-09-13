@@ -170,11 +170,11 @@
 
     .node-card {
       position: absolute;
-      width: 310px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      width: 260px;
+      background: #13151b;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
       pointer-events: auto;
       cursor: pointer;
       transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.25s ease, filter 0.25s ease;
@@ -186,12 +186,12 @@
 
     .node-card.selected {
       border-color: #0284c7 !important;
-      box-shadow: 0 0 0 1px #0284c7, 0 12px 28px rgba(0, 0, 0, 0.85) !important;
+      box-shadow: 0 0 0 1px #0284c7, 0 8px 24px rgba(0, 0, 0, 0.75) !important;
     }
 
     .node-card.traced {
       border-color: #38bdf8;
-      box-shadow: 0 0 0 1px #38bdf8, 0 12px 28px rgba(0, 0, 0, 0.85);
+      box-shadow: 0 0 0 1px #38bdf8, 0 8px 24px rgba(0, 0, 0, 0.75);
     }
 
     .node-card.dimmed {
@@ -200,122 +200,131 @@
       pointer-events: none;
     }
 
-    /* Card Internal Sections */
+    /* Card Internal Sections - Clean, Uncluttered, Compact */
     .card-header {
-      padding: 14px 14px 10px 14px;
+      padding: 9px 11px 4px 11px;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
+      gap: 6px;
     }
 
     .card-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 7px;
       overflow: hidden;
+      min-width: 0;
     }
 
     .card-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 12px;
       flex-shrink: 0;
     }
 
     .card-titles {
       overflow: hidden;
+      min-width: 0;
     }
 
     .card-category {
-      font-size: 9px;
-      letter-spacing: 0.08em;
+      font-size: 8px;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text-dim);
+      line-height: 1;
       margin-bottom: 2px;
     }
 
     .card-title {
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
       color: #fff;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.2;
     }
 
     .card-subtitle {
-      padding: 0 14px 8px 14px;
-      font-size: 10px;
+      padding: 0 11px 5px 11px;
+      font-size: 9.5px;
       color: var(--text-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.2;
     }
 
     .card-alert {
-      margin: 0 12px 10px 12px;
-      padding: 7px 9px;
-      border-radius: 6px;
-      font-size: 10px;
-      line-height: 1.35;
+      margin: 1px 9px 5px 9px;
+      padding: 3.5px 7px;
+      border-radius: 4px;
+      font-size: 9px;
+      line-height: 1.3;
       display: flex;
       align-items: flex-start;
-      gap: 6px;
+      gap: 4px;
+      background: rgba(239, 68, 68, 0.12);
+      border-left: 2.5px solid #ef4444;
+      color: #fca5a5;
     }
 
     .card-details {
-      padding: 8px 14px;
-      background: var(--bg-card-sub);
-      border-top: 1px solid var(--border-subtle);
+      padding: 4px 11px 5px 11px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      font-size: 10px;
+      gap: 2px;
+      font-size: 9px;
     }
 
     .detail-row {
       display: flex;
       justify-content: space-between;
+      line-height: 15px;
     }
     .detail-key { color: var(--text-dim); }
-    .detail-val { color: var(--text-main); font-weight: 500; }
+    .detail-val { color: #cbd5e1; font-weight: 500; }
 
     .card-footer {
-      padding: 7px 14px;
-      background: var(--bg-card-foot);
-      border-top: 1px solid var(--border-subtle);
-      border-bottom-left-radius: 12px;
-      border-bottom-right-radius: 12px;
+      padding: 4px 11px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 10px;
+      font-size: 8.5px;
       color: var(--text-muted);
     }
-    .card-footer .metric { color: #fff; font-weight: 600; }
-    .card-footer .submetric { font-size: 9px; color: var(--text-dim); }
+    .card-footer .metric { color: #f1f5f9; font-weight: 500; }
+    .card-footer .submetric { font-size: 8px; color: var(--text-dim); }
 
-    /* Ports */
+    /* Ports - Vertically centered at the middle of the card */
     .port {
       position: absolute;
-      top: 35px;
-      width: 14px;
-      height: 14px;
-      background: #14151b;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 10px;
+      height: 10px;
+      background: #101218;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 10;
     }
-    .port-in { left: -7px; border: 2px solid var(--port-in); }
-    .port-in::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--port-in); }
-    .port-out { right: -7px; border: 2px solid var(--port-out); }
-    .port-out::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--port-out); }
+    .port-in { left: -5px; border: 1.5px solid var(--port-in); }
+    .port-in::after { content: ''; width: 3px; height: 3px; border-radius: 50%; background: var(--port-in); }
+    .port-out { right: -5px; border: 1.5px solid var(--port-out); }
+    .port-out::after { content: ''; width: 3px; height: 3px; border-radius: 50%; background: var(--port-out); }
 
     /* Status Badges */
     .status-badge {

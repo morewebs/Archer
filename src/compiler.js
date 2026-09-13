@@ -155,7 +155,7 @@ export function compileArcher(spec, outputPath) {
 
         <!-- Optional Alert Strip -->
         ${n.alert ? `
-          <div class="card-alert font-mono" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5;">
+          <div class="card-alert font-mono">
             ${(n.alert.startsWith('💥') || n.alert.startsWith('⚠️') || n.alert.startsWith('🚨') || n.alert.startsWith('🔥')) ? '' : '<span>⚠️</span>'}
             <span>${escapeHtml(n.alert)}</span>
           </div>

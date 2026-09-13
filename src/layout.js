@@ -6,19 +6,19 @@
 
 import { computeStagesAndLanes, classifyEdges } from './graph.js';
 
-export const CARD_WIDTH = 310;
-export const BASE_HEIGHT = 88;
-export const ALERT_HEIGHT = 38;
-export const ROW_HEIGHT = 22;
+export const CARD_WIDTH = 260;
+export const BASE_HEIGHT = 84;
+export const ALERT_HEIGHT = 37;
+export const ROW_HEIGHT = 17;
 
-export const GAP_X = 240;
-export const GAP_Y = 60;
+export const GAP_X = 200;
+export const GAP_Y = 48;
 export const MARGIN_X = 80;
 export const MARGIN_Y = 120;
 
-export const BOUNDARY_PAD_X = 40;
-export const BOUNDARY_PAD_TOP = 52;
-export const BOUNDARY_PAD_BOTTOM = 36;
+export const BOUNDARY_PAD_X = 36;
+export const BOUNDARY_PAD_TOP = 48;
+export const BOUNDARY_PAD_BOTTOM = 32;
 
 /**
  * Calculates deterministic card height based on content
@@ -214,24 +214,25 @@ export function computeLayout(spec) {
         const inList = nodeIncomingEdges.get(edge.to) || [];
         const inIdx = Math.max(0, inList.indexOf(edge));
 
-        const syOffset = outList.length > 1 ? 42 + ((outIdx - (outList.length - 1) / 2) * 14) : 42;
-        const tyOffset = inList.length > 1 ? 42 + ((inIdx - (inList.length - 1) / 2) * 14) : 42;
+        const srcMidY = src.y + (src.height / 2);
+        const dstMidY = dst.y + (dst.height / 2);
+
+        sy = outList.length > 1 ? srcMidY + ((outIdx - (outList.length - 1) / 2) * 12) : srcMidY;
+        ty = inList.length > 1 ? dstMidY + ((inIdx - (inList.length - 1) / 2) * 12) : dstMidY;
 
         sx = src.x + CARD_WIDTH;
-        sy = src.y + syOffset;
         tx = dst.x;
-        ty = dst.y + tyOffset;
 
-        const dx = Math.max(70, Math.abs(tx - sx) * 0.52);
+        const dx = Math.max(60, Math.abs(tx - sx) * 0.52);
         pathData = `M ${sx} ${sy} C ${sx + dx} ${sy}, ${tx - dx} ${ty}, ${tx} ${ty}`;
       } else if (edgeClass === 'lateral') {
         // Same stage lateral edge: loop out through the inter-column gap
         sx = src.x + CARD_WIDTH;
-        sy = src.y + 42;
+        sy = src.y + (src.height / 2);
         tx = dst.x + CARD_WIDTH;
-        ty = dst.y + 42;
+        ty = dst.y + (dst.height / 2);
 
-        const loopOffset = 50;
+        const loopOffset = 45;
         pathData = `M ${sx} ${sy} C ${sx + loopOffset} ${sy}, ${tx + loopOffset} ${ty}, ${tx} ${ty}`;
       } else {
         // Back edge: Arched track overhead
